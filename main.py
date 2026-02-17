@@ -1,9 +1,15 @@
 import os
 import requests
 import random
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import yfinance as yf
+
+# 設定 User-Agent 避免被 API 限制
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+}
 
 # TOEIC 900 級別商用單詞詞典（50 個）
 VOCABULARY = [
@@ -60,7 +66,7 @@ VOCABULARY = [
 ]
 
 def get_weather():
-    """從 open-meteo API 獲取台中市天氣"""
+    """從 open-meteo API 獲取台中市天氣 (帶重試機制)"""
     try:
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -70,26 +76,38 @@ def get_weather():
             "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
             "timezone": "Asia/Taipei",
         }
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
         
-        current = data.get("current", {})
-        daily = data.get("daily", {})
-        
-        temp = current.get("temperature_2m", "N/A")
-        humidity = current.get("relative_humidity_2m", "N/A")
-        rain_prob = daily.get("precipitation_probability_max", [0])[0]
-        max_temp = daily.get("temperature_2m_max", [0])[0]
-        min_temp = daily.get("temperature_2m_min", [0])[0]
-        
-        return {
-            "current_temp": temp,
-            "humidity": humidity,
-            "max_temp": max_temp,
-            "min_temp": min_temp,
-            "rain_prob": rain_prob,
-        }
+        # 重試 3 次，每次超時 15 秒
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, params=params, timeout=15, headers=headers)
+                response.raise_for_status()
+                data = response.json()
+                
+                current = data.get("current", {})
+                daily = data.get("daily", {})
+                
+                temp = current.get("temperature_2m", "N/A")
+                humidity = current.get("relative_humidity_2m", "N/A")
+                rain_prob = daily.get("precipitation_probability_max", [0])[0]
+                max_temp = daily.get("temperature_2m_max", [0])[0]
+                min_temp = daily.get("temperature_2m_min", [0])[0]
+                
+                return {
+                    "current_temp": temp,
+                    "humidity": humidity,
+                    "max_temp": max_temp,
+                    "min_temp": min_temp,
+                    "rain_prob": rain_prob,
+                }
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    print(f"    [RETRY] 天氣 API 超時，重試 {attempt + 2}/{max_retries}...")
+                    time.sleep(2)
+                    continue
+                else:
+                    raise
     except Exception as e:
         return {"error": f"天氣獲取失敗: {str(e)}"}
 
@@ -105,7 +123,7 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_financial_data():
-    """獲取金融商品數據"""
+    """獲取金融商品數據 (帶重試機制)"""
     stocks = ["MU", "PLTR", "ORCL", "TSLA", "NVDA"]
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
@@ -118,10 +136,22 @@ def get_financial_data():
             try:
                 print(f"  正在查詢: {ticker}...")
                 stock = yf.Ticker(ticker)
-                # 移除 progress 參數，該版本不支持
-                hist = stock.history(period="5d")
                 
-                if hist.empty:
+                # 重試 2 次
+                hist = None
+                for attempt in range(2):
+                    try:
+                        hist = stock.history(period="5d")
+                        if hist is not None and not hist.empty:
+                            break
+                    except Exception as e:
+                        if attempt == 0:
+                            print(f"    [RETRY] {ticker} 重試...")
+                            time.sleep(1)
+                        else:
+                            raise
+                
+                if hist is None or hist.empty:
                     print(f"    [WARN] {ticker} 無數據")
                     data[ticker] = {"error": "無可用數據"}
                     continue
@@ -181,15 +211,10 @@ def format_message(weather, reminders, financial, vocab):
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
     
-    # 調試輸出
-    print(f"\n[DEBUG] financial 字典鑰匙: {list(financial.keys())}")
-    print(f"[DEBUG] financial 字典內容: {financial}")
-    
     # 美股
     message += "*美股:*\n"
     stock_count = 0
     for ticker in stocks:
-        print(f"[DEBUG] 檢查 {ticker}: 在字典中={ticker in financial}, 值={financial.get(ticker)}")
         if ticker in financial:
             if "error" not in financial[ticker]:
                 data = financial[ticker]
@@ -235,18 +260,28 @@ def format_message(weather, reminders, financial, vocab):
     return message
 
 def send_discord_message(message, webhook_url):
-    """發送訊息到 Discord"""
+    """發送訊息到 Discord (帶重試機制)"""
     try:
         payload = {
             "content": message,
         }
-        response = requests.post(webhook_url, json=payload, timeout=10)
-        if response.status_code == 204:
-            print("✅ 訊息已成功發送到 Discord")
-            return True
-        else:
-            print(f"❌ 發送失敗: {response.status_code} - {response.text}")
-            return False
+        
+        # 重試 2 次，超時 15 秒
+        for attempt in range(2):
+            try:
+                response = requests.post(webhook_url, json=payload, timeout=15, headers=headers)
+                if response.status_code == 204:
+                    print("✅ 訊息已成功發送到 Discord")
+                    return True
+                else:
+                    print(f"❌ 發送失敗: {response.status_code} - {response.text}")
+                    return False
+            except requests.exceptions.Timeout:
+                if attempt == 0:
+                    print(f"    [RETRY] Discord 發送超時，重試...")
+                    time.sleep(2)
+                else:
+                    raise
     except Exception as e:
         print(f"❌ 發送錯誤: {e}")
         return False
