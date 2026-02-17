@@ -126,13 +126,13 @@ def get_financial_data():
                     data[ticker] = {"error": "無可用數據"}
                     continue
                 
-                close_price = hist['Close'].iloc[-1]
-                prev_close = hist['Close'].iloc[-2] if len(hist) >= 2 else close_price
+                close_price = float(hist['Close'].iloc[-1])
+                prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
                 change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
                 
                 data[ticker] = {
-                    "price": round(close_price, 2),
-                    "change_pct": round(change_pct, 2),
+                    "price": float(round(close_price, 2)),
+                    "change_pct": float(round(change_pct, 2)),
                 }
                 print(f"    [OK] {ticker}: ${close_price:.2f} ({change_pct:+.2f}%)")
             except Exception as ticker_error:
@@ -181,10 +181,15 @@ def format_message(weather, reminders, financial, vocab):
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
     
+    # 調試輸出
+    print(f"\n[DEBUG] financial 字典鑰匙: {list(financial.keys())}")
+    print(f"[DEBUG] financial 字典內容: {financial}")
+    
     # 美股
     message += "*美股:*\n"
     stock_count = 0
     for ticker in stocks:
+        print(f"[DEBUG] 檢查 {ticker}: 在字典中={ticker in financial}, 值={financial.get(ticker)}")
         if ticker in financial:
             if "error" not in financial[ticker]:
                 data = financial[ticker]
