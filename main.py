@@ -185,10 +185,22 @@ def get_financial_data():
                     try:
                         print(f"  Finnhub 查詢: {ticker}...")
                         
+                        # Finnhub API 對不同類型的符號有不同格式
+                        # 股票: MU, PLTR 等
+                        # 加密貨幣: BTCUSD（無橫線）
+                        # 貨幣對: USDTWD（無等號）
+                        finnhub_symbol = ticker
+                        if ticker.endswith("-USD"):
+                            # 加密貨幣：BTC-USD → BTCUSD
+                            finnhub_symbol = ticker.replace("-", "")
+                        elif ticker == "TWD=X":
+                            # 貨幣對：TWD=X → USDTWD
+                            finnhub_symbol = "USDTWD"
+                        
                         # Finnhub API 端點
                         url = f"https://finnhub.io/api/v1/quote"
                         params = {
-                            "symbol": ticker.replace("-USD", ""),
+                            "symbol": finnhub_symbol,
                             "token": finnhub_key
                         }
                         
@@ -205,6 +217,10 @@ def get_financial_data():
                                     "change_pct": float(round(change_pct, 2)),
                                 }
                                 print(f"    [OK] {ticker}: ${current:.2f} ({change_pct:+.2f}%)")
+                            else:
+                                print(f"    [WARN] {ticker} 無有效數據")
+                        else:
+                            print(f"    [ERROR] {ticker} HTTP {response.status_code}")
                     except Exception as e:
                         print(f"    [ERROR] Finnhub {ticker}: {str(e)}")
             except Exception as e:
