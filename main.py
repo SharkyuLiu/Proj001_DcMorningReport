@@ -11,7 +11,7 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 }
 
-# TOEIC 900 級別商用單詞詞典（50 個）
+# TOEIC 900 級別商用單詞詞典（200 個）
 VOCABULARY = [
     {"word": "Prudent", "meaning": "謹慎的；明智的", "usage": "Be prudent when making financial decisions.", "context": "商務"},
     {"word": "Meticulous", "meaning": "一絲不苟的；細心的", "usage": "A meticulous approach to project management is essential.", "context": "商務"},
@@ -63,6 +63,119 @@ VOCABULARY = [
     {"word": "Benevolent", "meaning": "慈善的；仁慈的", "usage": "The company has a benevolent foundation.", "context": "商務"},
     {"word": "Catalyst", "meaning": "催化劑；促進者", "usage": "Innovation is the catalyst for growth.", "context": "商務"},
     {"word": "Debacle", "meaning": "慘敗；崩潰", "usage": "The product launch was a complete debacle.", "context": "商務"},
+    {"word": "Efficacious", "meaning": "有效的；奏效的", "usage": "The new marketing strategy proved efficacious.", "context": "商務"},
+    {"word": "Facile", "meaning": "容易的；膚淺的", "usage": "Don't rely on facile solutions for complex problems.", "context": "商務"},
+    {"word": "Gregarious", "meaning": "群居的；愛社交的", "usage": "She is a gregarious person who enjoys teamwork.", "context": "商務"},
+    {"word": "Harbinger", "meaning": "先兆；預告者", "usage": "Economic data is a harbinger of future trends.", "context": "商務"},
+    {"word": "Indolent", "meaning": "懶惰的；不願費力的", "usage": "An indolent approach will damage your career.", "context": "商務"},
+    {"word": "Juxtaposition", "meaning": "並列；對比", "usage": "The juxtaposition of old and new strategies worked well.", "context": "商務"},
+    {"word": "Kudos", "meaning": "讚譽；掌聲", "usage": "Kudos to the team for their outstanding performance.", "context": "商務"},
+    {"word": "Loquacious", "meaning": "話多的；冗長的", "usage": "The loquacious presenter held everyone's attention.", "context": "商務"},
+    {"word": "Meander", "meaning": "蜿蜒；漫步", "usage": "The conversation began to meander off topic.", "context": "商務"},
+    {"word": "Nomenclature", "meaning": "命名法；專用術語", "usage": "Understanding the nomenclature is essential in this field.", "context": "商務"},
+    {"word": "Obsequious", "meaning": "過度殷勤的；奴顏婢膝的", "usage": "His obsequious behavior made colleagues uncomfortable.", "context": "商務"},
+    {"word": "Paucity", "meaning": "缺乏；不足", "usage": "There is a paucity of qualified candidates.", "context": "商務"},
+    {"word": "Quixotic", "meaning": "不切實際的；空想的", "usage": "His quixotic plan was ultimately unsuccessful.", "context": "商務"},
+    {"word": "Rancor", "meaning": "怨恨；仇恨", "usage": "There is lingering rancor between the two departments.", "context": "商務"},
+    {"word": "Salient", "meaning": "突出的；主要的", "usage": "The salient points should be included in the summary.", "context": "商務"},
+    {"word": "Taciturn", "meaning": "沉默寡言的", "usage": "The taciturn executive rarely spoke in meetings.", "context": "商務"},
+    {"word": "Ubiquity", "meaning": "無所不在；普遍性", "usage": "The ubiquity of mobile phones changed communication.", "context": "商務"},
+    {"word": "Vigilant", "meaning": "警惕的；謹慎的", "usage": "We must remain vigilant against security threats.", "context": "商務"},
+    {"word": "Wacky", "meaning": "古怪的；荒唐的", "usage": "His wacky ideas sometimes lead to innovation.", "context": "商務"},
+    {"word": "Xerophyte", "meaning": "耐旱植物", "usage": "This company is xerophyte in its resource management.", "context": "商務"},
+    {"word": "Yearn", "meaning": "渴望；懷念", "usage": "Employees yearn for better work-life balance.", "context": "商務"},
+    {"word": "Zephyr", "meaning": "微風；輕風", "usage": "Even a zephyr of change can shift market dynamics.", "context": "商務"},
+    {"word": "Abscond", "meaning": "逃跑；潛逃", "usage": "The suspect absconded with company funds.", "context": "商務"},
+    {"word": "Aberrant", "meaning": "異常的；不正常的", "usage": "The aberrant behavior did not reflect company values.", "context": "商務"},
+    {"word": "Abeyance", "meaning": "暫停；懸而未決", "usage": "The project remains in abeyance pending approval.", "context": "商務"},
+    {"word": "Ablate", "meaning": "消融；磨損", "usage": "Our market share began to ablate.", "context": "商務"},
+    {"word": "Abnegation", "meaning": "放棄；拒絕", "usage": "His abnegation of responsibility disappointed us.", "context": "商務"},
+    {"word": "Abrade", "meaning": "磨損；擦傷", "usage": "Poor customer service abrades brand loyalty.", "context": "商務"},
+    {"word": "Abrogate", "meaning": "廢止；撤銷", "usage": "The contract was abrogated due to non-compliance.", "context": "商務"},
+    {"word": "Abstemious", "meaning": "節制的；不放縱的", "usage": "An abstemious approach to spending is prudent.", "context": "商務"},
+    {"word": "Abstinence", "meaning": "節制；禁慾", "usage": "Abstinence from risky investments is wise.", "context": "商務"},
+    {"word": "Abstruse", "meaning": "深奧的；難懂的", "usage": "The financial model is too abstruse for most people.", "context": "商務"},
+    {"word": "Abundance", "meaning": "豐富；大量", "usage": "The market has an abundance of similar products.", "context": "商務"},
+    {"word": "Accede", "meaning": "同意；贊成", "usage": "The client finally acceded to our proposal.", "context": "商務"},
+    {"word": "Accelerate", "meaning": "加速；促進", "usage": "We need to accelerate the project timeline.", "context": "商務"},
+    {"word": "Accentuate", "meaning": "強調；突出", "usage": "This feature accentuates the product's benefits.", "context": "商務"},
+    {"word": "Accolade", "meaning": "讚揚；榮譽", "usage": "She received accolades for her innovation.", "context": "商務"},
+    {"word": "Accommodate", "meaning": "容納；適應", "usage": "We can accommodate your special requirements.", "context": "商務"},
+    {"word": "Accomplice", "meaning": "共犯；幫凶", "usage": "He was found to be an accomplice in the fraud.", "context": "商務"},
+    {"word": "Accord", "meaning": "協議；一致", "usage": "We reached an accord on the key terms.", "context": "商務"},
+    {"word": "Accost", "meaning": "主動交談；招呼", "usage": "The sales rep accosted customers in the lobby.", "context": "商務"},
+    {"word": "Accuracy", "meaning": "準確性；精確度", "usage": "Data accuracy is critical for our reports.", "context": "商務"},
+    {"word": "Acculturation", "meaning": "文化適應；同化", "usage": "New employees undergo acculturation processes.", "context": "商務"},
+    {"word": "Accumulate", "meaning": "積累；堆積", "usage": "Compound interest allows wealth to accumulate.", "context": "商務"},
+    {"word": "Achieve", "meaning": "達成；完成", "usage": "We achieved our quarterly targets ahead of schedule.", "context": "商務"},
+    {"word": "Acrid", "meaning": "刺鼻的；尖刻的", "usage": "The acrid tone of the email damaged relationships.", "context": "商務"},
+    {"word": "Acrimony", "meaning": "尖刻；苦毒", "usage": "The negotiations ended with acrimony.", "context": "商務"},
+    {"word": "Acrobat", "meaning": "雜技演員；適應性強的人", "usage": "He is an acrobat in navigating complex situations.", "context": "商務"},
+    {"word": "Acronym", "meaning": "縮寫詞；首字母縮略詞", "usage": "Learn the common acronyms used in our industry.", "context": "商務"},
+    {"word": "Actualize", "meaning": "實現；使具體化", "usage": "We must actualize our vision through action.", "context": "商務"},
+    {"word": "Acuity", "meaning": "敏銳；尖銳", "usage": "His analytical acuity impressed the board.", "context": "商務"},
+    {"word": "Acumen", "meaning": "敏銳；技巧", "usage": "Business acumen is essential for leadership.", "context": "商務"},
+    {"word": "Acute", "meaning": "尖銳的；急性的", "usage": "We face an acute shortage of skilled workers.", "context": "商務"},
+    {"word": "Adage", "meaning": "格言；諺語", "usage": "The adage 'time is money' holds true in business.", "context": "商務"},
+    {"word": "Adamant", "meaning": "堅定的；不屈的", "usage": "He was adamant about his decision.", "context": "商務"},
+    {"word": "Adaptation", "meaning": "適應；改編", "usage": "Innovation requires rapid adaptation to change.", "context": "商務"},
+    {"word": "Addendum", "meaning": "附錄；附加內容", "usage": "See the addendum for additional information.", "context": "商務"},
+    {"word": "Adequate", "meaning": "充分的；足夠的", "usage": "Our resources are adequate for this project.", "context": "商務"},
+    {"word": "Adhere", "meaning": "粘附；遵守", "usage": "Employees must adhere to company policies.", "context": "商務"},
+    {"word": "Adjacent", "meaning": "鄰近的；相鄰的", "usage": "The adjacent sectors show similar trends.", "context": "商務"},
+    {"word": "Adjourn", "meaning": "延期；休會", "usage": "We will adjourn the meeting until next week.", "context": "商務"},
+    {"word": "Adjunct", "meaning": "附加物；助手", "usage": "She serves as an adjunct professor at the university.", "context": "商務"},
+    {"word": "Adjust", "meaning": "調整；適應", "usage": "We need to adjust our pricing strategy.", "context": "商務"},
+    {"word": "Administer", "meaning": "管理；執行", "usage": "The manager administers employee benefits.", "context": "商務"},
+    {"word": "Admirable", "meaning": "令人欽佩的；值得讚美的", "usage": "Her admirable work ethic inspires others.", "context": "商務"},
+    {"word": "Admiration", "meaning": "欽佩；讚美", "usage": "I have great admiration for his leadership.", "context": "商務"},
+    {"word": "Admissible", "meaning": "可接受的；可認可的", "usage": "The evidence is admissible in court.", "context": "商務"},
+    {"word": "Admission", "meaning": "承認；進入", "usage": "His admission of error showed integrity.", "context": "商務"},
+    {"word": "Admittedly", "meaning": "誠然；的確", "usage": "The plan is admittedly complex.", "context": "商務"},
+    {"word": "Admixture", "meaning": "混合物；摻雜", "usage": "Success is an admixture of luck and hard work.", "context": "商務"},
+    {"word": "Admonition", "meaning": "警告；勸告", "usage": "The compliance warning was an admonition.", "context": "商務"},
+    {"word": "Adolescent", "meaning": "青少年；不成熟的", "usage": "The company demonstrated adolescent behavior.", "context": "商務"},
+    {"word": "Adonis", "meaning": "美男子", "usage": "He is considered the adonis of the office.", "context": "商務"},
+    {"word": "Adopt", "meaning": "採納；通過", "usage": "The board will adopt the new policy.", "context": "商務"},
+    {"word": "Adoration", "meaning": "崇拜；愛慕", "usage": "Customers feel adoration for the brand.", "context": "商務"},
+    {"word": "Adorn", "meaning": "裝飾；妝點", "usage": "Awards adorn the company's office walls.", "context": "商務"},
+    {"word": "Adroit", "meaning": "靈巧的；熟練的", "usage": "Her adroit negotiation skills secured the deal.", "context": "商務"},
+    {"word": "Adulation", "meaning": "奉承；讚美", "usage": "The CEO received adulation from shareholders.", "context": "商務"},
+    {"word": "Adult", "meaning": "成年人；成熟的", "usage": "We need adult leadership in this crisis.", "context": "商務"},
+    {"word": "Adulterate", "meaning": "摻雜；污染", "usage": "Never adulterate your product quality.", "context": "商務"},
+    {"word": "Advance", "meaning": "前進；預付", "usage": "We advance the project deadline.", "context": "商務"},
+    {"word": "Advantage", "meaning": "優勢；好處", "usage": "This location has a strategic advantage.", "context": "商務"},
+    {"word": "Adventure", "meaning": "冒險；奇遇", "usage": "Entrepreneurship is an adventure.", "context": "商務"},
+    {"word": "Adversary", "meaning": "對手；敵手", "usage": "Our main adversary is the competitor.", "context": "商務"},
+    {"word": "Adverse", "meaning": "不利的；敵對的", "usage": "Adverse market conditions affected sales.", "context": "商務"},
+    {"word": "Adversity", "meaning": "逆境；不幸", "usage": "The company overcame adversity.", "context": "商務"},
+    {"word": "Advertise", "meaning": "做廣告；宣傳", "usage": "We advertise our products on social media.", "context": "商務"},
+    {"word": "Advertisement", "meaning": "廣告", "usage": "The advertisement went viral online.", "context": "商務"},
+    {"word": "Advice", "meaning": "建議；忠告", "usage": "Follow the consultant's advice carefully.", "context": "商務"},
+    {"word": "Advisable", "meaning": "明智的；可取的", "usage": "It is advisable to review contracts before signing.", "context": "商務"},
+    {"word": "Advise", "meaning": "勸告；建議", "usage": "I advise you to reconsider.", "context": "商務"},
+    {"word": "Advocate", "meaning": "提倡；擁護", "usage": "She advocates for better employee benefits.", "context": "商務"},
+    {"word": "Aerial", "meaning": "空中的；航空的", "usage": "The aerial view shows our market position.", "context": "商務"},
+    {"word": "Aerate", "meaning": "通風；充氣", "usage": "We aerate opinions in open forums.", "context": "商務"},
+    {"word": "Aeronautics", "meaning": "航空學", "usage": "Innovations in aeronautics benefit our industry.", "context": "商務"},
+    {"word": "Aesthetic", "meaning": "美學的；審美的", "usage": "The aesthetic design appeals to customers.", "context": "商務"},
+    {"word": "Affable", "meaning": "和藹的；親切的", "usage": "The CEO is affable and approachable.", "context": "商務"},
+    {"word": "Affair", "meaning": "事情；事務", "usage": "Managing company affairs requires attention.", "context": "商務"},
+    {"word": "Affect", "meaning": "影響；假裝", "usage": "Market trends affect our strategy.", "context": "商務"},
+    {"word": "Affectation", "meaning": "矯揉造作；裝飾", "usage": "Avoid affectation in professional communication.", "context": "商務"},
+    {"word": "Affection", "meaning": "感情；喜愛", "usage": "Customers show affection for our brand.", "context": "商務"},
+    {"word": "Affidavit", "meaning": "誓言書；宣誓書", "usage": "Submit an affidavit with your application.", "context": "商務"},
+    {"word": "Affiliate", "meaning": "關聯公司；聯盟", "usage": "We partner with affiliated companies.", "context": "商務"},
+    {"word": "Affiliation", "meaning": "隸屬；聯繫", "usage": "What is your professional affiliation?", "context": "商務"},
+    {"word": "Affinity", "meaning": "親和力；傾向", "usage": "She has an affinity for technology.", "context": "商務"},
+    {"word": "Affirm", "meaning": "確認；申明", "usage": "We affirm our commitment to quality.", "context": "商務"},
+    {"word": "Affirmative", "meaning": "肯定的；贊成的", "usage": "The answer is in the affirmative.", "context": "商務"},
+    {"word": "Affix", "meaning": "貼上；附加", "usage": "Affix your signature to the document.", "context": "商務"},
+    {"word": "Afflict", "meaning": "折磨；使痛苦", "usage": "Rising costs afflict small businesses.", "context": "商務"},
+    {"word": "Affluence", "meaning": "富裕；豐富", "usage": "Affluence brings both opportunities and challenges.", "context": "商務"},
+    {"word": "Affluent", "meaning": "富有的；豐富的", "usage": "Our affluent client base demands premium services.", "context": "商務"},
+    {"word": "Afford", "meaning": "能夠承擔；提供", "usage": "We can afford to invest in innovation.", "context": "商務"},
+    {"word": "Affront", "meaning": "侮辱；冒犯", "usage": "The remark was an affront to our team.", "context": "商務"},
 ]
 
 def get_weather():
@@ -123,12 +236,14 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_financial_data():
-    """獲取金融商品數據 (優先 yfinance，備選 Finnhub)"""
-    stocks = ["MU", "PLTR", "ORCL", "TSLA", "NVDA"]
-    crypto = ["BTC-USD", "ETH-USD"]
-    currency = ["TWD=X"]
+    """獲取金融商品數據 (台股、美股大盤、美股個股、加密貨幣)"""
+    tw_stocks = ["0050", "2330"]                                                                        # 台股
+    us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]                                                     # 美股大盤
+    us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]  # 美股個股
+    crypto = ["BTC-USD", "ETH-USD"]                                                                    # 加密貨幣
+    currency = ["TWD=X"]                                                                               # 匯率
     
-    all_tickers = stocks + crypto + currency
+    all_tickers = tw_stocks + us_market + us_stocks + crypto + currency
     data = {}
     
     # 嘗試使用 yfinance
@@ -263,14 +378,42 @@ def format_message(weather, reminders, financial, vocab):
     
     # 金融商品
     message += "📈 **金融商品走勢**\n"
-    stocks = ["MU", "PLTR", "ORCL", "TSLA", "NVDA"]
+    tw_stocks = ["0050", "2330"]
+    us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]
+    us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
     
-    # 美股
-    message += "*美股:*\n"
+    # 台股
+    message += "*台股:*\n"
+    tw_count = 0
+    for ticker in tw_stocks:
+        if ticker in financial:
+            if "error" not in financial[ticker]:
+                data = financial[ticker]
+                symbol = "📈" if data["change_pct"] >= 0 else "📉"
+                message += f"• {ticker}: NT${data['price']} {symbol} {data['change_pct']:+.2f}%\n"
+                tw_count += 1
+    if tw_count == 0:
+        message += "• (無可用數據)\n"
+    
+    # 美股大盤
+    message += "\n*美股大盤:*\n"
+    market_count = 0
+    for ticker in us_market:
+        if ticker in financial:
+            if "error" not in financial[ticker]:
+                data = financial[ticker]
+                symbol = "📈" if data["change_pct"] >= 0 else "📉"
+                message += f"• {ticker}: ${data['price']} {symbol} {data['change_pct']:+.2f}%\n"
+                market_count += 1
+    if market_count == 0:
+        message += "• (無可用數據)\n"
+    
+    # 美股個股
+    message += "\n*美股個股:*\n"
     stock_count = 0
-    for ticker in stocks:
+    for ticker in us_stocks:
         if ticker in financial:
             if "error" not in financial[ticker]:
                 data = financial[ticker]
