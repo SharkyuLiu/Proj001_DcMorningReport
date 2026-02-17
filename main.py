@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import yfinance as yf
+import json
 
 # 設定 User-Agent 避免被 API 限制
 headers = {
@@ -235,113 +236,192 @@ def get_reminders():
     except Exception as e:
         return [f"讀取提醒失敗: {e}"]
 
-def get_financial_data():
-    """獲取金融商品數據 (台股、美股大盤、美股個股、加密貨幣)"""
-    tw_stocks = ["0050", "2330"]                                                                        # 台股
-    us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]                                                     # 美股大盤
-    us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]  # 美股個股
-    crypto = ["BTC-USD", "ETH-USD"]                                                                    # 加密貨幣
-    currency = ["TWD=X"]                                                                               # 匯率
-    
-    all_tickers = tw_stocks + us_market + us_stocks + crypto + currency
-    data = {}
-    
-    # 嘗試使用 yfinance
-    yfinance_success = False
+def get_tw_stock_data(ticker):
+    """獲取台股數據 (使用 CoinMarketCap 或 Yahoo 台灣)"""
     try:
-        for ticker in all_tickers:
-            try:
-                print(f"  正在查詢: {ticker}...")
-                stock = yf.Ticker(ticker)
-                
-                # 重試 2 次
-                hist = None
-                for attempt in range(2):
-                    try:
-                        hist = stock.history(period="5d")
-                        if hist is not None and not hist.empty:
-                            break
-                    except Exception as e:
-                        if attempt == 0:
-                            print(f"    [RETRY] {ticker} 重試...")
-                            time.sleep(1)
-                        else:
-                            raise
-                
-                if hist is None or hist.empty:
-                    print(f"    [WARN] {ticker} 無數據")
-                    data[ticker] = {"error": "無可用數據"}
-                    continue
-                
-                close_price = float(hist['Close'].iloc[-1])
-                prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
-                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
-                
-                data[ticker] = {
-                    "price": float(round(close_price, 2)),
-                    "change_pct": float(round(change_pct, 2)),
-                }
-                print(f"    [OK] {ticker}: ${close_price:.2f} ({change_pct:+.2f}%)")
-                yfinance_success = True
-            except Exception as ticker_error:
-                print(f"    [ERROR] {ticker}: {str(ticker_error)}")
-                data[ticker] = {"error": str(ticker_error)}
-    except Exception as e:
-        print(f"[WARNING] yfinance 失敗，嘗試備選方案...")
-    
-    # 如果 yfinance 完全失敗，使用 Finnhub API
-    if not yfinance_success and not any(isinstance(v, dict) and "error" not in v for v in data.values()):
-        print("[INFO] 嘗試使用 Finnhub API...")
-        finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+        # 嘗試使用 Yahoo Finance 台灣站台，格式為 XXXX.TW
+        tw_ticker = f"{ticker}.TW"
+        stock = yf.Ticker(tw_ticker)
+        hist = stock.history(period="5d")
         
-        if finnhub_key:
-            try:
-                for ticker in all_tickers:
-                    try:
-                        print(f"  Finnhub 查詢: {ticker}...")
-                        
-                        # Finnhub API 對不同類型的符號有不同格式
-                        # 股票: MU, PLTR 等
-                        # 加密貨幣: BTCUSD（無橫線）
-                        # 貨幣對: USDTWD（無等號）
-                        finnhub_symbol = ticker
-                        if ticker.endswith("-USD"):
-                            # 加密貨幣：BTC-USD → BTCUSD
-                            finnhub_symbol = ticker.replace("-", "")
-                        elif ticker == "TWD=X":
-                            # 貨幣對：TWD=X → USDTWD
-                            finnhub_symbol = "USDTWD"
-                        
-                        # Finnhub API 端點
-                        url = f"https://finnhub.io/api/v1/quote"
-                        params = {
-                            "symbol": finnhub_symbol,
-                            "token": finnhub_key
-                        }
-                        
-                        response = requests.get(url, params=params, timeout=10, headers=headers)
-                        if response.status_code == 200:
-                            result = response.json()
-                            if "c" in result and result["c"] > 0:  # c = current price
-                                current = result.get("c", 0)
-                                prev = result.get("pc", current)  # pc = previous close
-                                change_pct = ((current - prev) / prev * 100) if prev != 0 else 0
-                                
-                                data[ticker] = {
-                                    "price": float(round(current, 2)),
-                                    "change_pct": float(round(change_pct, 2)),
-                                }
-                                print(f"    [OK] {ticker}: ${current:.2f} ({change_pct:+.2f}%)")
-                            else:
-                                print(f"    [WARN] {ticker} 無有效數據")
-                        else:
-                            print(f"    [ERROR] {ticker} HTTP {response.status_code}")
-                    except Exception as e:
-                        print(f"    [ERROR] Finnhub {ticker}: {str(e)}")
-            except Exception as e:
-                print(f"[ERROR] Finnhub 失敗: {str(e)}")
+        if hist is not None and not hist.empty:
+            close_price = float(hist['Close'].iloc[-1])
+            prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
+            change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+            
+            return {
+                "price": float(round(close_price, 2)),
+                "change_pct": float(round(change_pct, 2)),
+            }
+    except Exception as e:
+        print(f"    [WARN] 台股 {ticker} 無法獲取: {str(e)[:50]}")
+    
+    return {"error": "無可用數據"}
+
+def get_crypto_data(symbol):
+    """獲取加密貨幣數據 (使用 CoinGecko 免費 API)"""
+    try:
+        # CoinGecko 免費 API，無需認證
+        coin_ids = {
+            "BTC-USD": "bitcoin",
+            "ETH-USD": "ethereum",
+        }
+        
+        coin_id = coin_ids.get(symbol)
+        if not coin_id:
+            return {"error": "未知幣種"}
+        
+        url = "https://api.coingecko.com/api/v3/simple/price"
+        params = {
+            "ids": coin_id,
+            "vs_currencies": "usd",
+            "include_24hr_change": "true"
+        }
+        
+        response = requests.get(url, params=params, timeout=10, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            if coin_id in data:
+                price = data[coin_id].get("usd", 0)
+                change = data[coin_id].get("usd_24h_change", 0)
+                
+                return {
+                    "price": float(round(price, 2)),
+                    "change_pct": float(round(change, 2)),
+                }
+    except Exception as e:
+        print(f"    [WARN] 加密貨幣 {symbol} 無法獲取: {str(e)[:50]}")
+    
+    return {"error": "無可用數據"}
+
+def get_currency_data(symbol):
+    """獲取匯率數據 (使用 exchangerate-api)"""
+    try:
+        if symbol == "TWD=X":
+            # 獲取台幣對美元的匯率
+            url = "https://api.exchangerate-api.com/v4/latest/USD"
+            response = requests.get(url, timeout=10, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                twd_rate = data.get("rates", {}).get("TWD", 0)
+                
+                if twd_rate > 0:
+                    return {
+                        "price": float(round(twd_rate, 2)),
+                        "change_pct": 0.0,  # 實時匯率無法計算變化百分比
+                    }
+    except Exception as e:
+        print(f"    [WARN] 匯率 {symbol} 無法獲取: {str(e)[:50]}")
+    
+    return {"error": "無可用數據"}
+
+def get_financial_data():
+    """獲取金融商品數據 (台股、美股、加密貨幣、匯率)"""
+    tw_stocks = ["0050", "2330"]
+    us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]
+    us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]
+    crypto = ["BTC-USD", "ETH-USD"]
+    currency = ["TWD=X"]
+    
+    data = {}
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+    
+    # 1️⃣ 獲取台股數據
+    print("  📍 查詢台股...")
+    for ticker in tw_stocks:
+        print(f"    正在查詢: {ticker}...")
+        result = get_tw_stock_data(ticker)
+        if "error" not in result:
+            data[ticker] = result
+            print(f"    [OK] {ticker}: NT${result['price']} {result['change_pct']:+.2f}%")
         else:
-            print("[WARNING] FINNHUB_API_KEY 未設定，無法使用備選方案")
+            data[ticker] = result
+            print(f"    [WARN] {ticker} 無數據")
+    
+    # 2️⃣ 獲取美股數據 (優先 Finnhub 或免費 API)
+    print("  📍 查詢美股...")
+    us_all = us_market + us_stocks
+    
+    if finnhub_key:
+        # 使用 Finnhub API
+        for ticker in us_all:
+            print(f"    正在查詢: {ticker}...")
+            try:
+                url = "https://finnhub.io/api/v1/quote"
+                params = {
+                    "symbol": ticker,
+                    "token": finnhub_key
+                }
+                
+                response = requests.get(url, params=params, timeout=10, headers=headers)
+                if response.status_code == 200:
+                    result = response.json()
+                    if "c" in result and result["c"] > 0:
+                        current = result.get("c", 0)
+                        prev = result.get("pc", current)
+                        change_pct = ((current - prev) / prev * 100) if prev != 0 else 0
+                        
+                        data[ticker] = {
+                            "price": float(round(current, 2)),
+                            "change_pct": float(round(change_pct, 2)),
+                        }
+                        print(f"    [OK] {ticker}: ${data[ticker]['price']} {data[ticker]['change_pct']:+.2f}%")
+                        continue
+            except Exception as e:
+                pass
+            
+            # Finnhub 失敗，標記為無數據
+            data[ticker] = {"error": "無可用數據"}
+            print(f"    [WARN] {ticker} 無數據")
+    else:
+        # 沒有 Finnhub Key，嘗試使用 yfinance (但可能失敗)
+        for ticker in us_all:
+            print(f"    正在查詢: {ticker}...")
+            try:
+                stock = yf.Ticker(ticker)
+                hist = stock.history(period="5d")
+                
+                if hist is not None and not hist.empty:
+                    close_price = float(hist['Close'].iloc[-1])
+                    prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
+                    change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                    
+                    data[ticker] = {
+                        "price": float(round(close_price, 2)),
+                        "change_pct": float(round(change_pct, 2)),
+                    }
+                    print(f"    [OK] {ticker}: ${data[ticker]['price']} {data[ticker]['change_pct']:+.2f}%")
+                    continue
+            except Exception as e:
+                pass
+            
+            data[ticker] = {"error": "無可用數據"}
+            print(f"    [WARN] {ticker} 無數據")
+    
+    # 3️⃣ 獲取加密貨幣數據
+    print("  📍 查詢加密貨幣...")
+    for ticker in crypto:
+        print(f"    正在查詢: {ticker}...")
+        result = get_crypto_data(ticker)
+        if "error" not in result:
+            data[ticker] = result
+            print(f"    [OK] {ticker}: ${result['price']:,.2f} {result['change_pct']:+.2f}%")
+        else:
+            data[ticker] = result
+            print(f"    [WARN] {ticker} 無數據")
+    
+    # 4️⃣ 獲取匯率數據
+    print("  📍 查詢匯率...")
+    for ticker in currency:
+        print(f"    正在查詢: {ticker}...")
+        result = get_currency_data(ticker)
+        if "error" not in result:
+            data[ticker] = result
+            print(f"    [OK] {ticker}: {result['price']:.2f}")
+        else:
+            data[ticker] = result
+            print(f"    [WARN] {ticker} 無數據")
     
     return data
 
