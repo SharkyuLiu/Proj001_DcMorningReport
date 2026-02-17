@@ -123,7 +123,7 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_financial_data():
-    """獲取金融商品數據 (帶重試機制)"""
+    """獲取金融商品數據 (優先 yfinance，備選 Finnhub)"""
     stocks = ["MU", "PLTR", "ORCL", "TSLA", "NVDA"]
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
@@ -131,6 +131,8 @@ def get_financial_data():
     all_tickers = stocks + crypto + currency
     data = {}
     
+    # 嘗試使用 yfinance
+    yfinance_success = False
     try:
         for ticker in all_tickers:
             try:
@@ -165,12 +167,50 @@ def get_financial_data():
                     "change_pct": float(round(change_pct, 2)),
                 }
                 print(f"    [OK] {ticker}: ${close_price:.2f} ({change_pct:+.2f}%)")
+                yfinance_success = True
             except Exception as ticker_error:
                 print(f"    [ERROR] {ticker}: {str(ticker_error)}")
                 data[ticker] = {"error": str(ticker_error)}
     except Exception as e:
-        print(f"[ERROR] 金融數據獲取失敗: {str(e)}")
-        data["error"] = f"金融數據獲取失敗: {str(e)}"
+        print(f"[WARNING] yfinance 失敗，嘗試備選方案...")
+    
+    # 如果 yfinance 完全失敗，使用 Finnhub API
+    if not yfinance_success and not any(isinstance(v, dict) and "error" not in v for v in data.values()):
+        print("[INFO] 嘗試使用 Finnhub API...")
+        finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+        
+        if finnhub_key:
+            try:
+                for ticker in all_tickers:
+                    try:
+                        print(f"  Finnhub 查詢: {ticker}...")
+                        
+                        # Finnhub API 端點
+                        url = f"https://finnhub.io/api/v1/quote"
+                        params = {
+                            "symbol": ticker.replace("-USD", ""),
+                            "token": finnhub_key
+                        }
+                        
+                        response = requests.get(url, params=params, timeout=10, headers=headers)
+                        if response.status_code == 200:
+                            result = response.json()
+                            if "c" in result and result["c"] > 0:  # c = current price
+                                current = result.get("c", 0)
+                                prev = result.get("pc", current)  # pc = previous close
+                                change_pct = ((current - prev) / prev * 100) if prev != 0 else 0
+                                
+                                data[ticker] = {
+                                    "price": float(round(current, 2)),
+                                    "change_pct": float(round(change_pct, 2)),
+                                }
+                                print(f"    [OK] {ticker}: ${current:.2f} ({change_pct:+.2f}%)")
+                    except Exception as e:
+                        print(f"    [ERROR] Finnhub {ticker}: {str(e)}")
+            except Exception as e:
+                print(f"[ERROR] Finnhub 失敗: {str(e)}")
+        else:
+            print("[WARNING] FINNHUB_API_KEY 未設定，無法使用備選方案")
     
     return data
 
