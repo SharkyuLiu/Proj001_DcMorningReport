@@ -116,21 +116,30 @@ def get_financial_data():
     try:
         for ticker in all_tickers:
             try:
+                print(f"  正在查詢: {ticker}...")
                 stock = yf.Ticker(ticker)
+                # 移除 progress 參數，該版本不支持
                 hist = stock.history(period="5d")
                 
-                if not hist.empty:
-                    close_price = hist['Close'].iloc[-1]
-                    prev_close = hist['Close'].iloc[-2] if len(hist) >= 2 else close_price
-                    change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
-                    
-                    data[ticker] = {
-                        "price": round(close_price, 2),
-                        "change_pct": round(change_pct, 2),
-                    }
+                if hist.empty:
+                    print(f"    [WARN] {ticker} 無數據")
+                    data[ticker] = {"error": "無可用數據"}
+                    continue
+                
+                close_price = hist['Close'].iloc[-1]
+                prev_close = hist['Close'].iloc[-2] if len(hist) >= 2 else close_price
+                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                
+                data[ticker] = {
+                    "price": round(close_price, 2),
+                    "change_pct": round(change_pct, 2),
+                }
+                print(f"    [OK] {ticker}: ${close_price:.2f} ({change_pct:+.2f}%)")
             except Exception as ticker_error:
+                print(f"    [ERROR] {ticker}: {str(ticker_error)}")
                 data[ticker] = {"error": str(ticker_error)}
     except Exception as e:
+        print(f"[ERROR] 金融數據獲取失敗: {str(e)}")
         data["error"] = f"金融數據獲取失敗: {str(e)}"
     
     return data
@@ -230,18 +239,38 @@ def main():
         print("❌ 錯誤: 未設定 DISCORD_WEBHOOK_URL 環境變數")
         return
     
-    print("🔄 開始收集資料...")
+    print("🔄 開始收集資料...\n")
     
     # 收集所有數據
+    print("📍 取得天氣數據...")
     weather = get_weather()
+    if "error" in weather:
+        print(f"  ⚠️  {weather['error']}")
+    else:
+        print(f"  ✅ 台中市溫度: {weather.get('current_temp')}°C")
+    
+    print("\n📝 取得提醒事項...")
     reminders = get_reminders()
+    print(f"  ✅ 找到 {len(reminders)} 項提醒")
+    
+    print("\n💹 取得金融數據...")
     financial = get_financial_data()
+    if "error" in financial:
+        print(f"  ⚠️  {financial['error']}")
+    else:
+        success_count = sum(1 for v in financial.values() if isinstance(v, dict) and "error" not in v)
+        print(f"  ✅ 成功獲取 {success_count} 個商品數據")
+    
+    print("\n📚 取得英文單字...")
     vocab = get_vocabulary()
+    print(f"  ✅ 隨機抽取 {len(vocab)} 個單字")
     
     # 生成訊息
+    print("\n✏️  正在格式化訊息...")
     message = format_message(weather, reminders, financial, vocab)
     
     # 發送訊息
+    print("\n📤 發送至 Discord...\n")
     send_discord_message(message, webhook_url)
 
 if __name__ == "__main__":
