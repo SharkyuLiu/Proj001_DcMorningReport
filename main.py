@@ -181,28 +181,43 @@ def format_message(weather, reminders, financial, vocab):
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
     
-    if "error" not in financial:
-        message += "*美股:*\n"
-        for ticker in stocks:
-            if ticker in financial and "error" not in financial[ticker]:
+    # 美股
+    message += "*美股:*\n"
+    stock_count = 0
+    for ticker in stocks:
+        if ticker in financial:
+            if "error" not in financial[ticker]:
                 data = financial[ticker]
                 symbol = "📈" if data["change_pct"] >= 0 else "📉"
                 message += f"• {ticker}: ${data['price']} {symbol} {data['change_pct']:+.2f}%\n"
-        
-        message += "\n*加密貨幣:*\n"
-        for ticker in crypto:
-            if ticker in financial and "error" not in financial[ticker]:
+                stock_count += 1
+    if stock_count == 0:
+        message += "• (無可用數據)\n"
+    
+    # 加密貨幣
+    message += "\n*加密貨幣:*\n"
+    crypto_count = 0
+    for ticker in crypto:
+        if ticker in financial:
+            if "error" not in financial[ticker]:
                 data = financial[ticker]
                 symbol = "📈" if data["change_pct"] >= 0 else "📉"
                 message += f"• {ticker}: ${data['price']:,.2f} {symbol} {data['change_pct']:+.2f}%\n"
-        
-        message += "\n*匯率:*\n"
-        for ticker in currency:
-            if ticker in financial and "error" not in financial[ticker]:
+                crypto_count += 1
+    if crypto_count == 0:
+        message += "• (無可用數據)\n"
+    
+    # 匯率
+    message += "\n*匯率:*\n"
+    currency_count = 0
+    for ticker in currency:
+        if ticker in financial:
+            if "error" not in financial[ticker]:
                 data = financial[ticker]
                 message += f"• {ticker}: {data['price']:.2f}\n"
-    else:
-        message += f"❌ {financial['error']}\n"
+                currency_count += 1
+    if currency_count == 0:
+        message += "• (無可用數據)\n"
     
     message += "\n"
     
