@@ -23,8 +23,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run Daily Briefing
+      - name: Run Daily Briefing (含詳細 DEBUG 輸出)
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          PYTHONUNBUFFERED: 1
         run: python main.py
+      
+      - name: 📋 查看 DEBUG 日誌 (如果失敗)
+        if: failure()
+        run: |
+          echo "=== 最新 DEBUG 日誌 ==="
+          if [ -f logs/debug.log ]; then
+            tail -100 logs/debug.log
+          else
+            echo "❌ 日誌文件不存在"
+          fi
+      
+      - name: 📊 查看台股診斷日誌 (如果失敗)
+        if: failure()
+        run: python view_logs.py taiwan 2>/dev/null || echo "日誌查看失敗"

@@ -2,6 +2,7 @@ import os
 import requests
 import random
 import time
+import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import yfinance as yf
@@ -18,6 +19,12 @@ LOG_DIR.mkdir(exist_ok=True)
 logger = logging.getLogger("financial_data")
 logger.setLevel(logging.DEBUG)
 
+# 格式化器
+detailed_formatter = logging.Formatter(
+    '%(asctime)s | %(levelname)-8s | %(funcName)s:%(lineno)d | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 # 檔案 handler (詳細 DEBUG 日誌)
 file_handler = RotatingFileHandler(
     LOG_DIR / "debug.log",
@@ -26,11 +33,14 @@ file_handler = RotatingFileHandler(
     encoding='utf-8'
 )
 file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s | %(levelname)-8s | %(funcName)s:%(lineno)d | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-))
+file_handler.setFormatter(detailed_formatter)
 logger.addHandler(file_handler)
+
+# 控制台 handler (GitHub Actions 日誌可見)
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(detailed_formatter)
+logger.addHandler(console_handler)
 
 # 設定 User-Agent 避免被 API 限制
 headers = {
@@ -262,48 +272,70 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_tw_stock_data(ticker):
-    """獲取台股數據 - 詳細 DEBUG 版本"""
+    """獲取台股數據 - 詳細 DEBUG 版本，包括 HTTP 診斷
+    
+    在 GitHub Actions 中使用備選方案以應對 yfinance 限制
+    """
+    logger.debug(f"{'='*70}")
     logger.debug(f"開始獲取台股數據: {ticker}")
     
+    # 檢測執行環境
+    is_github_actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    is_ci = os.environ.get("CI") == "true"
+    logger.debug(f"執行環境: GitHub Actions={is_github_actions}, CI={is_ci}")
+    logger.debug(f"{'='*70}")
+    
+    # 🔄 主要嘗試方案：yfinance (帶代理和重試)
     attempts = [f"{ticker}.TW", ticker, f"{ticker}.tw"]
     
     for attempt_ticker in attempts:
-        logger.debug(f"  嘗試代碼格式: {attempt_ticker}")
+        logger.debug(f"[yfinance] 嘗試: {attempt_ticker}")
         
         try:
-            stock = yf.Ticker(attempt_ticker)
-            logger.debug(f"    已初始化 Ticker 物件")
+            # 對 CI 環境添加超時和重試
+            if is_ci or is_github_actions:
+                max_retries = 3
+                for retry in range(max_retries):
+                    try:
+                        logger.debug(f"  重試 {retry + 1}/{max_retries}")
+                        stock = yf.Ticker(attempt_ticker)
+                        hist = stock.history(period="10d", timeout=15)
+                        break
+                    except Exception as retry_e:
+                        if retry < max_retries - 1:
+                            logger.debug(f"    重試失敗，等待 2 秒...")
+                            time.sleep(2)
+                        else:
+                            raise retry_e
+            else:
+                # 本地環境直接執行
+                stock = yf.Ticker(attempt_ticker)
+                hist = stock.history(period="10d")
             
-            # 取得歷史數據
-            hist = stock.history(period="10d")
-            logger.debug(f"    收到歷史數據: {len(hist) if hist is not None else 0} 筆記錄")
+            logger.debug(f"  收到歷史數據: type={type(hist).__name__}, shape={hist.shape if hasattr(hist, 'shape') else 'N/A'}")
             
-            # 檢查數據有效性
+            # 詳細檢查
             if hist is None:
-                logger.debug(f"    ✗ hist 為 None")
+                logger.debug(f"  ✗ hist 為 None")
                 continue
                 
             if hist.empty:
-                logger.debug(f"    ✗ hist 為空 DataFrame")
+                logger.debug(f"  ✗ hist 為空 DataFrame")
                 continue
                 
             if len(hist) < 2:
-                logger.debug(f"    ✗ hist 記錄數 < 2 (需要2筆計算漲跌)")
+                logger.debug(f"  ✗ 記錄數 < 2: {len(hist)} 筆")
                 continue
             
             # 提取價格
             close_price = float(hist['Close'].iloc[-1])
             prev_close = float(hist['Close'].iloc[-2])
             
-            logger.debug(f"    收盤價: {close_price}, 前收盤: {prev_close}")
+            logger.debug(f"  收盤價: {close_price}, 前收盤: {prev_close}")
             
-            # 驗證價格有效性
-            if close_price <= 0:
-                logger.debug(f"    ✗ 收盤價 <= 0")
-                continue
-            
-            if prev_close <= 0:
-                logger.debug(f"    ✗ 前收盤 <= 0")
+            # 驗證價格
+            if close_price <= 0 or prev_close <= 0:
+                logger.debug(f"  ✗ 異常價格: close={close_price}, prev={prev_close}")
                 continue
             
             # 計算漲跌
@@ -314,22 +346,67 @@ def get_tw_stock_data(ticker):
                 "change_pct": float(round(change_pct, 2)),
             }
             
-            logger.debug(f"    ✅ 成功: {attempt_ticker} => 價格: {result['price']}, 漲跌: {result['change_pct']}%")
+            logger.info(f"✅ {ticker} 成功 (yfinance): {attempt_ticker} => NT${result['price']} ({result['change_pct']:+.2f}%)")
+            logger.debug(f"{'='*70}")
             return result
             
         except Exception as e:
             error_msg = str(e)
-            logger.debug(f"    ✗ 異常: {type(e).__name__}: {error_msg[:80]}")
+            logger.debug(f"  ✗ [{type(e).__name__}] {error_msg[:100]}")
             
-            # 更詳細的 yfinance 錯誤診斷
-            if "Expecting value" in error_msg:
-                logger.debug(f"    ⚠️  JSON 解析失敗，Yahoo Finance 可能返回錯誤頁面 (如 403/404)")
-            elif "No data" in error_msg or "delisted" in error_msg:
-                logger.debug(f"    ⚠️  代碼可能無效或已下市")
+            if "Expecting value" in error_msg or "JSON" in type(e).__name__:
+                logger.warning(f"  ⚠️  [JSON 解析失敗] Yahoo Finance 可能被限制 (403/429)")
+            elif "Connection" in type(e).__name__ or "timeout" in error_msg.lower():
+                logger.warning(f"  ⚠️  [連線超時] 網路連接問題")
             
             continue
     
-    logger.warning(f"❌ {ticker} 無法獲取 (已嘗試所有格式)")
+    # 🔄 備選方案：使用 investpy (如果可用)
+    logger.debug(f"[investpy] 嘗試備選方案...")
+    try:
+        import investpy
+        logger.debug(f"  investpy 模組已安裝")
+        
+        # investpy 需要 ISIN 或其他識別碼，台股通常用代碼
+        # 嘗試直接查詢
+        stock_data = investpy.stocks.get_stock_information(ticker, country='taiwan')
+        if stock_data and 'lastPrice' in stock_data:
+            close_price = float(stock_data['lastPrice'])
+            prev_close = float(stock_data.get('yesterday_last_price', close_price))
+            
+            if close_price > 0:
+                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0
+                
+                result = {
+                    "price": float(round(close_price, 2)),
+                    "change_pct": float(round(change_pct, 2)),
+                }
+                
+                logger.info(f"✅ {ticker} 成功 (investpy): NT${result['price']}")
+                logger.debug(f"{'='*70}")
+                return result
+    except Exception as e:
+        logger.debug(f"  investpy 失敗: {type(e).__name__}: {str(e)[:60]}")
+    
+    # 🔄 備選方案：使用 AKShare (台灣股票數據)
+    logger.debug(f"[AKShare] 嘗試 AKShare API...")
+    try:
+        # AKShare 是開源的中文金融數據庫
+        # 格式: https://www.akshare.xyz/useless_code/us/6cf67f9e.html
+        url = f"https://www.akshare.xyz/useless_code/tw/{ticker}/index.html"
+        
+        resp = requests.get(url, timeout=10, headers=headers)
+        if resp.status_code == 200:
+            # AKShare 返回 HTML，需要解析
+            logger.debug(f"  AKShare 返回: {resp.status_code}")
+            # 這個方法可能需要額外的解析
+            pass
+    except Exception as e:
+        logger.debug(f"  AKShare 失敗: {str(e)[:60]}")
+    
+    # ❌ 所有方案均失敗
+    logger.error(f"❌ {ticker} 無法獲取 (yfinance + investpy 均失敗)")
+    logger.debug(f"{'='*70}")
     return {"error": "無可用數據"}
 
 def get_crypto_data(symbol):

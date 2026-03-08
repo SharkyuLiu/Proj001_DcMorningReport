@@ -1,49 +1,38 @@
-2026-03-08 15:06:02 | INFO     | get_financial_data:438 | ============================================================
-2026-03-08 15:06:02 | INFO     | get_financial_data:439 | 開始收集金融資料
-2026-03-08 15:06:02 | INFO     | get_financial_data:440 | ============================================================
-2026-03-08 15:06:02 | INFO     | get_financial_data:452 | Step 0: 獲取台灣指數
-2026-03-08 15:06:02 | WARNING  | get_financial_data:461 | 台灣加權指數無數據
-2026-03-08 15:06:02 | INFO     | get_financial_data:465 | Step 1: 獲取台股 (2 檔)
-2026-03-08 15:06:02 | DEBUG    | get_tw_stock_data:266 | 開始獲取台股數據: 0050
-2026-03-08 15:06:02 | DEBUG    | get_tw_stock_data:271 |   嘗試代碼格式: 0050.TW
-2026-03-08 15:06:02 | DEBUG    | get_tw_stock_data:275 |     已初始化 Ticker 物件
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:279 |     收到歷史數據: 10 筆記錄
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:298 |     收盤價: 76.8499984741211, 前收盤: 77.4000015258789
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:317 |     ✅ 成功: 0050.TW => 價格: 76.85, 漲跌: -0.71%
-2026-03-08 15:06:03 | INFO     | get_financial_data:473 |   ✅ 0050 成功: NT$76.85
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:266 | 開始獲取台股數據: 2330
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:271 |   嘗試代碼格式: 2330.TW
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:275 |     已初始化 Ticker 物件
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:279 |     收到歷史數據: 10 筆記錄
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:298 |     收盤價: 1890.0, 前收盤: 1900.0
-2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:317 |     ✅ 成功: 2330.TW => 價格: 1890.0, 漲跌: -0.53%
-2026-03-08 15:06:03 | INFO     | get_financial_data:473 |   ✅ 2330 成功: NT$1890.0
-2026-03-08 15:06:03 | INFO     | get_financial_data:480 | Step 2: 獲取美股 (20 檔)
-2026-03-08 15:06:03 | WARNING  | get_financial_data:520 | 未設定 FINNHUB_API_KEY，使用 yfinance (可能不穩定)
-2026-03-08 15:06:03 | DEBUG    | get_financial_data:538 |   ✅ VT yfinance: $141.92999267578125
-2026-03-08 15:06:03 | DEBUG    | get_financial_data:538 |   ✅ QQQ yfinance: $599.75
-2026-03-08 15:06:03 | DEBUG    | get_financial_data:538 |   ✅ SPY yfinance: $672.3800048828125
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ DIA yfinance: $475.2300109863281
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ EWT yfinance: $69.5199966430664
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ QCOM yfinance: $135.69000244140625
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ ANET yfinance: $132.88999938964844
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ TSLA yfinance: $396.7300109863281
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ NVDA yfinance: $177.82000732421875
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ GOOGL yfinance: $298.5199890136719
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ AAPL yfinance: $257.4599914550781
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ META yfinance: $644.8599853515625
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ AMZN yfinance: $213.2100067138672
-2026-03-08 15:06:04 | DEBUG    | get_financial_data:538 |   ✅ MSFT yfinance: $408.9599914550781
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ MU yfinance: $370.29998779296875
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ PLTR yfinance: $157.16000366210938
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ ORCL yfinance: $152.9600067138672
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ TSM yfinance: $338.8900146484375
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ AMD yfinance: $192.42999267578125
-2026-03-08 15:06:05 | DEBUG    | get_financial_data:538 |   ✅ INTC yfinance: $43.41999816894531
-2026-03-08 15:06:05 | INFO     | get_financial_data:549 | Step 3: 獲取加密貨幣 (2 檔)
-2026-03-08 15:06:06 | INFO     | get_financial_data:557 |   ✅ BTC-USD: $67212.0
-2026-03-08 15:06:06 | INFO     | get_financial_data:557 |   ✅ ETH-USD: $1951.28
-2026-03-08 15:06:06 | INFO     | get_financial_data:564 | Step 4: 獲取匯率 (1 檔)
-2026-03-08 15:06:07 | INFO     | get_financial_data:572 |   ✅ TWD=X: 31.85
-2026-03-08 15:06:07 | INFO     | get_financial_data:581 | 資料收集完成: 25/26 成功
-2026-03-08 15:06:07 | INFO     | get_financial_data:582 | ============================================================
+2026-03-08 21:31:51 | INFO     | get_financial_data:515 | ============================================================
+2026-03-08 21:31:51 | INFO     | get_financial_data:516 | 開始收集金融資料
+2026-03-08 21:31:51 | INFO     | get_financial_data:517 | ============================================================
+2026-03-08 21:31:51 | INFO     | get_financial_data:529 | Step 0: 獲取台灣指數
+2026-03-08 21:31:51 | WARNING  | get_financial_data:538 | 台灣加權指數無數據
+2026-03-08 21:31:51 | INFO     | get_financial_data:542 | Step 1: 獲取台股 (2 檔)
+2026-03-08 21:31:51 | DEBUG    | get_tw_stock_data:279 | ======================================================================
+2026-03-08 21:31:51 | DEBUG    | get_tw_stock_data:280 | 開始獲取台股數據: 0050
+2026-03-08 21:31:51 | DEBUG    | get_tw_stock_data:285 | 執行環境: GitHub Actions=False, CI=False
+2026-03-08 21:31:51 | DEBUG    | get_tw_stock_data:286 | ======================================================================
+2026-03-08 21:31:51 | DEBUG    | get_tw_stock_data:292 | [yfinance] 嘗試: 0050.TW
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:315 |   收到歷史數據: type=DataFrame, shape=(10, 8)
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:334 |   收盤價: 76.8499984741211, 前收盤: 77.4000015258789
+2026-03-08 21:31:53 | INFO     | get_tw_stock_data:349 | ✅ 0050 成功 (yfinance): 0050.TW => NT$76.85 (-0.71%)
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:350 | ======================================================================
+2026-03-08 21:31:53 | INFO     | get_financial_data:550 |   ✅ 0050 成功: NT$76.85
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:279 | ======================================================================
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:280 | 開始獲取台股數據: 2330
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:285 | 執行環境: GitHub Actions=False, CI=False
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:286 | ======================================================================
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:292 | [yfinance] 嘗試: 2330.TW
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:315 |   收到歷史數據: type=DataFrame, shape=(10, 7)
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:334 |   收盤價: 1890.0, 前收盤: 1900.0
+2026-03-08 21:31:53 | INFO     | get_tw_stock_data:349 | ✅ 2330 成功 (yfinance): 2330.TW => NT$1890.0 (-0.53%)
+2026-03-08 21:31:53 | DEBUG    | get_tw_stock_data:350 | ======================================================================
+2026-03-08 21:31:53 | INFO     | get_financial_data:550 |   ✅ 2330 成功: NT$1890.0
+2026-03-08 21:31:53 | INFO     | get_financial_data:557 | Step 2: 獲取美股 (20 檔)
+2026-03-08 21:31:53 | WARNING  | get_financial_data:597 | 未設定 FINNHUB_API_KEY，使用 yfinance (可能不穩定)
+2026-03-08 21:31:53 | DEBUG    | get_financial_data:615 |   ✅ VT yfinance: $141.92999267578125
+2026-03-08 21:31:53 | DEBUG    | get_financial_data:615 |   ✅ QQQ yfinance: $599.75
+2026-03-08 21:31:53 | DEBUG    | get_financial_data:615 |   ✅ SPY yfinance: $672.3800048828125
+2026-03-08 21:31:53 | DEBUG    | get_financial_data:615 |   ✅ DIA yfinance: $475.2300109863281
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ EWT yfinance: $69.5199966430664
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ QCOM yfinance: $135.69000244140625
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ ANET yfinance: $132.88999938964844
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ TSLA yfinance: $396.7300109863281
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ NVDA yfinance: $177.82000732421875
+2026-03-08 21:31:54 | DEBUG    | get_financial_data:615 |   ✅ GOOGL yfinance: $298.5199890136719
