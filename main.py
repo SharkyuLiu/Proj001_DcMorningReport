@@ -6,6 +6,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import yfinance as yf
 import json
+import schedule
 
 # 設定 User-Agent 避免被 API 限制
 headers = {
@@ -237,24 +238,54 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_tw_stock_data(ticker):
-    """獲取台股數據 (使用 CoinMarketCap 或 Yahoo 台灣)"""
-    try:
-        # 嘗試使用 Yahoo Finance 台灣站台，格式為 XXXX.TW
-        tw_ticker = f"{ticker}.TW"
-        stock = yf.Ticker(tw_ticker)
-        hist = stock.history(period="5d")
-        
-        if hist is not None and not hist.empty:
-            close_price = float(hist['Close'].iloc[-1])
-            prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
-            change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+    """獲取台股數據 (多方案嘗試)"""
+    attempts = [
+        f"{ticker}.TW",          # 方案1: Yahoo Taiwan market
+        f"{ticker}",             # 方案2: 直接代碼
+        f"{ticker}.tw",          # 方案3: 小寫
+    ]
+    
+    for attempt_ticker in attempts:
+        try:
+            stock = yf.Ticker(attempt_ticker)
+            hist = stock.history(period="5d")
             
-            return {
-                "price": float(round(close_price, 2)),
-                "change_pct": float(round(change_pct, 2)),
-            }
+            if hist is not None and not hist.empty:
+                close_price = float(hist['Close'].iloc[-1])
+                prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
+                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                
+                return {
+                    "price": float(round(close_price, 2)),
+                    "change_pct": float(round(change_pct, 2)),
+                }
+        except Exception as e:
+            pass
+    
+    # 如果 yfinance 都失敗，嘗試台灣證交所 API
+    try:
+        # 使用 TWSE (台灣證交所) 官方 API
+        url = f"https://www.tse.com.tw/exchangeReport/STOCK_DAY?response=json&date=&stockNo={ticker}"
+        response = requests.get(url, timeout=10, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "data" in data and len(data["data"]) > 0:
+                # 最後一筆交易數據
+                latest = data["data"][-1]
+                close_price = float(latest[6]) if len(latest) > 6 else 0
+                
+                if close_price > 0:
+                    # 倒數第二筆用來計算漲跌
+                    prev_close = float(data["data"][-2][6]) if len(data["data"]) > 1 else close_price
+                    change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                    
+                    return {
+                        "price": float(round(close_price, 2)),
+                        "change_pct": float(round(change_pct, 2)),
+                    }
     except Exception as e:
-        print(f"    [WARN] 台股 {ticker} 無法獲取: {str(e)[:50]}")
+        pass
     
     return {"error": "無可用數據"}
 
@@ -316,8 +347,51 @@ def get_currency_data(symbol):
     
     return {"error": "無可用數據"}
 
+def get_tw_futures_data(symbol="^TWIF"):
+    """獲取台灣期貨指數/加權指數"""
+    try:
+        # 方案1: 嘗試投資 investpy 獲取台灣加權指數
+        import investpy
+        try:
+            index_data = investpy.indices.get_index_recent_data(
+                index='TWII',  # 台灣加權指數
+                country='taiwan',
+                as_json=False,
+                order='ascending'
+            )
+            
+            if index_data is not None and len(index_data) > 0:
+                close_price = float(index_data['Close'].iloc[-1])
+                prev_close = float(index_data['Close'].iloc[-2]) if len(index_data) >= 2 else close_price
+                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                
+                return {
+                    "price": float(round(close_price, 2)),
+                    "change_pct": float(round(change_pct, 2)),
+                }
+        except Exception as e:
+            pass
+        
+        # 方案2: 嘗試 yfinance ^TWII (台灣加權指數)
+        stock = yf.Ticker("^TWII")
+        hist = stock.history(period="5d")
+        
+        if hist is not None and not hist.empty:
+            close_price = float(hist['Close'].iloc[-1])
+            prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
+            change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+            
+            return {
+                "price": float(round(close_price, 2)),
+                "change_pct": float(round(change_pct, 2)),
+            }
+    except Exception as e:
+        pass
+    
+    return {"error": "無可用數據"}
+
 def get_financial_data():
-    """獲取金融商品數據 (台股、美股、加密貨幣、匯率)"""
+    """獲取金融商品數據 (台股、台灣指數、美股、加密貨幣、匯率)"""
     tw_stocks = ["0050", "2330"]
     us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]
     us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]
@@ -326,6 +400,17 @@ def get_financial_data():
     
     data = {}
     finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+    
+    # 0️⃣ 獲取台灣加權指數數據
+    print("  📍 查詢台灣指數...")
+    print(f"    正在查詢: 台灣加權指數...")
+    result = get_tw_futures_data()
+    if "error" not in result:
+        data["^TWII"] = result
+        print(f"    [OK] 台灣加權指數: {result['price']} {result['change_pct']:+.2f}%")
+    else:
+        data["^TWII"] = result
+        print(f"    [INFO] 台灣加權指數 目前無數據，將使用 0050 作為市場指標")
     
     # 1️⃣ 獲取台股數據
     print("  📍 查詢台股...")
@@ -459,13 +544,23 @@ def format_message(weather, reminders, financial, vocab):
     # 金融商品
     message += "📈 **金融商品走勢**\n"
     tw_stocks = ["0050", "2330"]
+    tw_index = "^TWII"
     us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]
     us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]
     crypto = ["BTC-USD", "ETH-USD"]
     currency = ["TWD=X"]
     
+    # 台灣加權指數
+    message += "*台灣加權指數:*\n"
+    if tw_index in financial and "error" not in financial[tw_index]:
+        data = financial[tw_index]
+        symbol = "📈" if data["change_pct"] >= 0 else "📉"
+        message += f"• ^TWII: {data['price']} {symbol} {data['change_pct']:+.2f}%\n"
+    else:
+        message += "• (無可用數據)\n"
+    
     # 台股
-    message += "*台股:*\n"
+    message += "\n*台股:*\n"
     tw_count = 0
     for ticker in tw_stocks:
         if ticker in financial:
@@ -565,8 +660,8 @@ def send_discord_message(message, webhook_url):
         print(f"❌ 發送錯誤: {e}")
         return False
 
-def main():
-    """主函數"""
+def send_daily_report():
+    """發送每日報告的主任務"""
     # 獲取環境變數
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
@@ -606,6 +701,30 @@ def main():
     # 發送訊息
     print("\n📤 發送至 Discord...\n")
     send_discord_message(message, webhook_url)
+
+def main():
+    """主函數 - 支持定時模式和一次性運行"""
+    import sys
+    
+    # 檢查是否為定時模式
+    if len(sys.argv) > 1 and sys.argv[1] == "--schedule":
+        print("⏰ 啟動定時模式...")
+        print("📅 設定報告時間: 06:30 和 07:00\n")
+        
+        # 設定定時任務
+        schedule.every().day.at("06:30").do(send_daily_report)
+        schedule.every().day.at("07:00").do(send_daily_report)
+        
+        # 持續運行
+        try:
+            while True:
+                schedule.run_pending()
+                time.sleep(60)  # 每分鐘檢查一次
+        except KeyboardInterrupt:
+            print("\n\n⛔ 已停止定時服務")
+    else:
+        # 一次性運行
+        send_daily_report()
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,10 @@
 import sys
 sys.path.insert(0, '.')
 
-from main import get_financial_data, format_message, get_weather, get_reminders, get_vocabulary
+from main import (
+    get_financial_data, format_message, get_weather, 
+    get_reminders, get_vocabulary, get_tw_futures_data
+)
 import json
 
 print("🧪 測試金融數據獲取\n")
@@ -36,7 +39,12 @@ for ticker, data in financial.items():
         symbol = "📈" if data["change_pct"] >= 0 else "📉"
         price = data["price"]
         change = data["change_pct"]
-        print(f"  ✅ {ticker:10s}: ${price:>10} {symbol} {change:>7.2f}%")
+        if ticker == "^TWIF":
+            print(f"  ✅ {ticker:10s}: {price:>10} {symbol} {change:>7.2f}%")
+        elif ticker in ["0050", "2330"]:
+            print(f"  ✅ {ticker:10s}: NT${price:>9} {symbol} {change:>7.2f}%")
+        else:
+            print(f"  ✅ {ticker:10s}: ${price:>10} {symbol} {change:>7.2f}%")
     else:
         print(f"  ❌ {ticker:10s}: {data['error']}")
 
