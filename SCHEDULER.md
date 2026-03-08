@@ -5,15 +5,19 @@
 程式現在支援兩種運行模式：
 
 ### 1️⃣ **一次性運行**（適合測試）
+
 ```bash
 python main.py
 ```
+
 執行一次，然後退出。
 
 ### 2️⃣ **定時模式**（適合生產環境）
+
 ```bash
 python main.py --schedule
 ```
+
 會在各設定時間自動執行，持續運行。
 
 ---
@@ -21,6 +25,7 @@ python main.py --schedule
 ## 定時設定
 
 目前設定的報告時間：
+
 - **06:30** - 早晨第一份報告
 - **07:00** - 早晨第二份報告
 
@@ -45,6 +50,7 @@ schedule.every().day.at("07:30").do(send_daily_report)  # 改成 07:30
 ### 方式 1：Windows 工作排程器（推薦）
 
 1. **打開工作排程器**
+
    ```
    開始 → 搜尋 "工作排程器" → 開啟
    ```
@@ -102,6 +108,7 @@ cd /d C:\Users\Liu\Desktop\Projects\Proj001_DcMorningReport
 ### 1️⃣ 定時任務未執行
 
 **檢查清單：**
+
 - ☑️ 已設定 `DISCORD_WEBHOOK_URL` 環境變數
 - ☑️ 已設定 `FINNHUB_API_KEY` 環境變數（可選）
 - ☑️ 工作排程器已啟用該任務
@@ -111,6 +118,7 @@ cd /d C:\Users\Liu\Desktop\Projects\Proj001_DcMorningReport
 ### 2️⃣ 程式執行但沒有發送訊息
 
 執行測試看是否有錯誤：
+
 ```bash
 python test_financial.py
 ```
@@ -120,6 +128,7 @@ python test_financial.py
 ### 3️⃣ 無法找到 schedule 模組
 
 確保已安裝依賴：
+
 ```bash
 pip install schedule
 ```

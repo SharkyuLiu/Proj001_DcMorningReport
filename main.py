@@ -238,53 +238,31 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_tw_stock_data(ticker):
-    """獲取台股數據 (多方案嘗試)"""
-    attempts = [
-        f"{ticker}.TW",          # 方案1: Yahoo Taiwan market
-        f"{ticker}",             # 方案2: 直接代碼
-        f"{ticker}.tw",          # 方案3: 小寫
-    ]
-    
-    for attempt_ticker in attempts:
-        try:
-            stock = yf.Ticker(attempt_ticker)
-            hist = stock.history(period="5d")
-            
-            if hist is not None and not hist.empty:
-                close_price = float(hist['Close'].iloc[-1])
-                prev_close = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else close_price
-                change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
-                
-                return {
-                    "price": float(round(close_price, 2)),
-                    "change_pct": float(round(change_pct, 2)),
-                }
-        except Exception as e:
-            pass
-    
-    # 如果 yfinance 都失敗，嘗試台灣證交所 API
+    """獲取台股數據 (使用 yfinance，已驗證可用)"""
     try:
-        # 使用 TWSE (台灣證交所) 官方 API
-        url = f"https://www.tse.com.tw/exchangeReport/STOCK_DAY?response=json&date=&stockNo={ticker}"
-        response = requests.get(url, timeout=10, headers=headers)
+        # 嘗試多種代碼格式
+        attempts = [f"{ticker}.TW", ticker, f"{ticker}.tw"]
         
-        if response.status_code == 200:
-            data = response.json()
-            if "data" in data and len(data["data"]) > 0:
-                # 最後一筆交易數據
-                latest = data["data"][-1]
-                close_price = float(latest[6]) if len(latest) > 6 else 0
+        for attempt_ticker in attempts:
+            try:
+                stock = yf.Ticker(attempt_ticker)
+                # 使用更長期間確保有數據
+                hist = stock.history(period="10d")
                 
-                if close_price > 0:
-                    # 倒數第二筆用來計算漲跌
-                    prev_close = float(data["data"][-2][6]) if len(data["data"]) > 1 else close_price
-                    change_pct = ((close_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                if hist is not None and not hist.empty and len(hist) >= 2:
+                    close_price = float(hist['Close'].iloc[-1])
+                    prev_close = float(hist['Close'].iloc[-2])
                     
-                    return {
-                        "price": float(round(close_price, 2)),
-                        "change_pct": float(round(change_pct, 2)),
-                    }
-    except Exception as e:
+                    if close_price > 0:
+                        change_pct = ((close_price - prev_close) / prev_close) * 100
+                        
+                        return {
+                            "price": float(round(close_price, 2)),
+                            "change_pct": float(round(change_pct, 2)),
+                        }
+            except Exception:
+                pass
+    except Exception:
         pass
     
     return {"error": "無可用數據"}
