@@ -7,6 +7,30 @@ from zoneinfo import ZoneInfo
 import yfinance as yf
 import json
 import schedule
+import logging
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+# 設定 logging 系統
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+
+logger = logging.getLogger("financial_data")
+logger.setLevel(logging.DEBUG)
+
+# 檔案 handler (詳細 DEBUG 日誌)
+file_handler = RotatingFileHandler(
+    LOG_DIR / "debug.log",
+    maxBytes=5*1024*1024,
+    backupCount=3,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s | %(levelname)-8s | %(funcName)s:%(lineno)d | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+logger.addHandler(file_handler)
 
 # 設定 User-Agent 避免被 API 限制
 headers = {
@@ -238,33 +262,74 @@ def get_reminders():
         return [f"讀取提醒失敗: {e}"]
 
 def get_tw_stock_data(ticker):
-    """獲取台股數據 (使用 yfinance，已驗證可用)"""
-    try:
-        # 嘗試多種代碼格式
-        attempts = [f"{ticker}.TW", ticker, f"{ticker}.tw"]
-        
-        for attempt_ticker in attempts:
-            try:
-                stock = yf.Ticker(attempt_ticker)
-                # 使用更長期間確保有數據
-                hist = stock.history(period="10d")
-                
-                if hist is not None and not hist.empty and len(hist) >= 2:
-                    close_price = float(hist['Close'].iloc[-1])
-                    prev_close = float(hist['Close'].iloc[-2])
-                    
-                    if close_price > 0:
-                        change_pct = ((close_price - prev_close) / prev_close) * 100
-                        
-                        return {
-                            "price": float(round(close_price, 2)),
-                            "change_pct": float(round(change_pct, 2)),
-                        }
-            except Exception:
-                pass
-    except Exception:
-        pass
+    """獲取台股數據 - 詳細 DEBUG 版本"""
+    logger.debug(f"開始獲取台股數據: {ticker}")
     
+    attempts = [f"{ticker}.TW", ticker, f"{ticker}.tw"]
+    
+    for attempt_ticker in attempts:
+        logger.debug(f"  嘗試代碼格式: {attempt_ticker}")
+        
+        try:
+            stock = yf.Ticker(attempt_ticker)
+            logger.debug(f"    已初始化 Ticker 物件")
+            
+            # 取得歷史數據
+            hist = stock.history(period="10d")
+            logger.debug(f"    收到歷史數據: {len(hist) if hist is not None else 0} 筆記錄")
+            
+            # 檢查數據有效性
+            if hist is None:
+                logger.debug(f"    ✗ hist 為 None")
+                continue
+                
+            if hist.empty:
+                logger.debug(f"    ✗ hist 為空 DataFrame")
+                continue
+                
+            if len(hist) < 2:
+                logger.debug(f"    ✗ hist 記錄數 < 2 (需要2筆計算漲跌)")
+                continue
+            
+            # 提取價格
+            close_price = float(hist['Close'].iloc[-1])
+            prev_close = float(hist['Close'].iloc[-2])
+            
+            logger.debug(f"    收盤價: {close_price}, 前收盤: {prev_close}")
+            
+            # 驗證價格有效性
+            if close_price <= 0:
+                logger.debug(f"    ✗ 收盤價 <= 0")
+                continue
+            
+            if prev_close <= 0:
+                logger.debug(f"    ✗ 前收盤 <= 0")
+                continue
+            
+            # 計算漲跌
+            change_pct = ((close_price - prev_close) / prev_close) * 100
+            
+            result = {
+                "price": float(round(close_price, 2)),
+                "change_pct": float(round(change_pct, 2)),
+            }
+            
+            logger.debug(f"    ✅ 成功: {attempt_ticker} => 價格: {result['price']}, 漲跌: {result['change_pct']}%")
+            return result
+            
+        except Exception as e:
+            error_msg = str(e)
+            logger.debug(f"    ✗ 異常: {type(e).__name__}: {error_msg[:80]}")
+            
+            # 更詳細的 yfinance 錯誤診斷
+            if "Expecting value" in error_msg:
+                logger.debug(f"    ⚠️  JSON 解析失敗，Yahoo Finance 可能返回錯誤頁面 (如 403/404)")
+            elif "No data" in error_msg or "delisted" in error_msg:
+                logger.debug(f"    ⚠️  代碼可能無效或已下市")
+            
+            continue
+    
+    logger.warning(f"❌ {ticker} 無法獲取 (已嘗試所有格式)")
     return {"error": "無可用數據"}
 
 def get_crypto_data(symbol):
@@ -369,7 +434,11 @@ def get_tw_futures_data(symbol="^TWIF"):
     return {"error": "無可用數據"}
 
 def get_financial_data():
-    """獲取金融商品數據 (台股、台灣指數、美股、加密貨幣、匯率)"""
+    """獲取金融商品數據 - 詳細日誌版本"""
+    logger.info("="*60)
+    logger.info("開始收集金融資料")
+    logger.info("="*60)
+    
     tw_stocks = ["0050", "2330"]
     us_market = ["VT", "QQQ", "SPY", "DIA", "EWT"]
     us_stocks = ["QCOM", "ANET", "TSLA", "NVDA", "GOOGL", "AAPL", "META", "AMZN", "MSFT", "MU", "PLTR", "ORCL", "TSM", "AMD", "INTC"]
@@ -380,6 +449,7 @@ def get_financial_data():
     finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
     
     # 0️⃣ 獲取台灣加權指數數據
+    logger.info("Step 0: 獲取台灣指數")
     print("  📍 查詢台灣指數...")
     print(f"    正在查詢: 台灣加權指數...")
     result = get_tw_futures_data()
@@ -388,9 +458,11 @@ def get_financial_data():
         print(f"    [OK] 台灣加權指數: {result['price']} {result['change_pct']:+.2f}%")
     else:
         data["^TWII"] = result
+        logger.warning("台灣加權指數無數據")
         print(f"    [INFO] 台灣加權指數 目前無數據，將使用 0050 作為市場指標")
     
     # 1️⃣ 獲取台股數據
+    logger.info(f"Step 1: 獲取台股 ({len(tw_stocks)} 檔)")
     print("  📍 查詢台股...")
     for ticker in tw_stocks:
         print(f"    正在查詢: {ticker}...")
@@ -398,15 +470,19 @@ def get_financial_data():
         if "error" not in result:
             data[ticker] = result
             print(f"    [OK] {ticker}: NT${result['price']} {result['change_pct']:+.2f}%")
+            logger.info(f"  ✅ {ticker} 成功: NT${result['price']}")
         else:
             data[ticker] = result
             print(f"    [WARN] {ticker} 無數據")
+            logger.warning(f"  ❌ {ticker} 失敗")
     
     # 2️⃣ 獲取美股數據 (優先 Finnhub 或免費 API)
+    logger.info(f"Step 2: 獲取美股 ({len(us_market + us_stocks)} 檔)")
     print("  📍 查詢美股...")
     us_all = us_market + us_stocks
     
     if finnhub_key:
+        logger.info("使用 Finnhub API")
         # 使用 Finnhub API
         for ticker in us_all:
             print(f"    正在查詢: {ticker}...")
@@ -430,14 +506,18 @@ def get_financial_data():
                             "change_pct": float(round(change_pct, 2)),
                         }
                         print(f"    [OK] {ticker}: ${data[ticker]['price']} {data[ticker]['change_pct']:+.2f}%")
+                        logger.debug(f"  ✅ {ticker} Finnhub: ${current}")
                         continue
             except Exception as e:
+                logger.debug(f"  Finnhub {ticker} 異常: {str(e)[:60]}")
                 pass
             
             # Finnhub 失敗，標記為無數據
             data[ticker] = {"error": "無可用數據"}
             print(f"    [WARN] {ticker} 無數據")
+            logger.warning(f"  ❌ {ticker} Finnhub 失敗")
     else:
+        logger.warning("未設定 FINNHUB_API_KEY，使用 yfinance (可能不穩定)")
         # 沒有 Finnhub Key，嘗試使用 yfinance (但可能失敗)
         for ticker in us_all:
             print(f"    正在查詢: {ticker}...")
@@ -455,14 +535,18 @@ def get_financial_data():
                         "change_pct": float(round(change_pct, 2)),
                     }
                     print(f"    [OK] {ticker}: ${data[ticker]['price']} {data[ticker]['change_pct']:+.2f}%")
+                    logger.debug(f"  ✅ {ticker} yfinance: ${close_price}")
                     continue
             except Exception as e:
+                logger.debug(f"  yfinance {ticker} 異常: {str(e)[:60]}")
                 pass
             
             data[ticker] = {"error": "無可用數據"}
             print(f"    [WARN] {ticker} 無數據")
+            logger.warning(f"  ❌ {ticker} 獲取失敗")
     
     # 3️⃣ 獲取加密貨幣數據
+    logger.info(f"Step 3: 獲取加密貨幣 ({len(crypto)} 檔)")
     print("  📍 查詢加密貨幣...")
     for ticker in crypto:
         print(f"    正在查詢: {ticker}...")
@@ -470,11 +554,14 @@ def get_financial_data():
         if "error" not in result:
             data[ticker] = result
             print(f"    [OK] {ticker}: ${result['price']:,.2f} {result['change_pct']:+.2f}%")
+            logger.info(f"  ✅ {ticker}: ${result['price']}")
         else:
             data[ticker] = result
             print(f"    [WARN] {ticker} 無數據")
+            logger.warning(f"  ❌ {ticker} 失敗")
     
     # 4️⃣ 獲取匯率數據
+    logger.info(f"Step 4: 獲取匯率 ({len(currency)} 檔)")
     print("  📍 查詢匯率...")
     for ticker in currency:
         print(f"    正在查詢: {ticker}...")
@@ -482,9 +569,17 @@ def get_financial_data():
         if "error" not in result:
             data[ticker] = result
             print(f"    [OK] {ticker}: {result['price']:.2f}")
+            logger.info(f"  ✅ {ticker}: {result['price']:.2f}")
         else:
             data[ticker] = result
             print(f"    [WARN] {ticker} 無數據")
+            logger.warning(f"  ❌ {ticker} 失敗")
+    
+    # 統計成功數量
+    success_count = sum(1 for v in data.values() if "error" not in v)
+    total_count = len(data)
+    logger.info(f"資料收集完成: {success_count}/{total_count} 成功")
+    logger.info("="*60)
     
     return data
 
