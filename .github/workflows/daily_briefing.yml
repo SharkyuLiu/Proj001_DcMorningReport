@@ -2,7 +2,8 @@ name: Daily Briefing
 
 on:
   schedule:
-    - cron: '30 23 * * *'  # UTC 23:30 = 台北時間(UTC+8) 隔天早上 7:30
+    - cron: '30 22 * * *'  # UTC 22:30 = 台北時間(UTC+8) 早上 6:30
+    - cron: '0 23 * * *'   # UTC 23:00 = 台北時間(UTC+8) 早上 7:00
   workflow_dispatch:  # 允許手動觸發
 
 jobs:

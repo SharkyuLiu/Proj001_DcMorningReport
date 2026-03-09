@@ -10,6 +10,7 @@
 ## 日誌位置
 
 ### 本地環境
+
 ```
 logs/
 └── debug.log          # 詳細 DEBUG 日誌（自動滾動，最多 3 個備份）
@@ -19,7 +20,9 @@ logs/
 ```
 
 ### GitHub Actions
+
 在 GitHub 網頁查看：
+
 ```
 https://github.com/你的用戶名/Proj001_DcMorningReport/actions
 → 點擊最新的 "Daily Briefing" 工作流
@@ -32,22 +35,26 @@ https://github.com/你的用戶名/Proj001_DcMorningReport/actions
 ### 🖥️ 本地環境查看
 
 #### 1️⃣ 查看日誌統計
+
 ```bash
 python view_logs.py stats
 ```
 
 #### 2️⃣ 查看台股相關日誌
+
 ```bash
 python view_logs.py taiwan
 ```
 
 #### 3️⃣ 查看最後 N 行日誌
+
 ```bash
 python view_logs.py tail:100    # 查看最後 100 行
 python view_logs.py tail:50     # 查看最後 50 行（預設）
 ```
 
 #### 4️⃣ 查看錯誤日誌
+
 ```bash
 python view_logs.py error
 ```
@@ -63,17 +70,20 @@ python view_logs.py error
    - `⚠️` - 警告信息
 
 如果失敗，GitHub Actions 會自動執行額外的診斷步驟：
+
 - **"查看 DEBUG 日誌"** - 顯示 `logs/debug.log` 的最後 100 行
 - **"查看台股診斷日誌"** - 提取所有台股相關日誌
 
 ## 日誌格式說明
 
 每行日誌包含以下信息：
+
 ```
 時間 | 日誌級別 | 函數名:行號 | 訊息內容
 ```
 
 示例：
+
 ```
 2026-03-08 15:06:02 | DEBUG    | get_tw_stock_data:266 | 開始獲取台股數據: 0050
 2026-03-08 15:06:03 | DEBUG    | get_tw_stock_data:279 |     收到歷史數據: 10 筆記錄
@@ -82,32 +92,38 @@ python view_logs.py error
 
 ## 日誌級別
 
-| 級別 | 說明 |
-|------|------|
-| **DEBUG** | 詳細診斷信息（開發/除錯用） |
-| **INFO** | 一般信息（正常運行） |
-| **WARNING** | 警告（某些功能無法運行） |
-| **ERROR** | 錯誤（嚴重問題） |
+| 級別        | 說明                        |
+| ----------- | --------------------------- |
+| **DEBUG**   | 詳細診斷信息（開發/除錯用） |
+| **INFO**    | 一般信息（正常運行）        |
+| **WARNING** | 警告（某些功能無法運行）    |
+| **ERROR**   | 錯誤（嚴重問題）            |
 
 ## 📍 GitHub Actions 特有的 DEBUG 功能
 
 本系統在 GitHub Actions 中添加了特殊處理：
 
 ### 1️⃣ 環境檢測
+
 ```
 執行環境: GitHub Actions=true, CI=true
 ```
 
 ### 2️⃣ 自動重試機制
+
 在 CI 環境中，yfinance 會自動重試最多 3 次，每次間隔 2 秒
 
 ### 3️⃣ 備選方案
+
 如果 yfinance 在 GitHub Actions 中失敗，系統會嘗試：
+
 - investpy API
 - AKShare 數據源（開源金融數據）
 
 ### 4️⃣ 自動診斷輸出
+
 工作流失敗時自動輸出：
+
 - `logs/debug.log` 的最後 100 行
 - 台股相關的所有日誌
 
@@ -116,6 +132,7 @@ python view_logs.py error
 ### 本地環境診斷
 
 #### 步驟 1: 檢查台股日誌
+
 ```bash
 python view_logs.py taiwan
 ```
@@ -123,11 +140,13 @@ python view_logs.py taiwan
 #### 步驟 2: 查找關鍵信息
 
 ✅ **成功的標記**：
+
 ```
 ✅ 0050 成功 (yfinance): 0050.TW => NT$76.85 (-0.71%)
 ```
 
 ❌ **常見失敗原因**：
+
 ```
 ✗ hist 為 None                          → yfinance 返回 None
 ✗ hist 為空 DataFrame                   → 無可用數據
@@ -139,26 +158,30 @@ python view_logs.py taiwan
 
 #### 步驟 3: 根據錯誤採取行動
 
-| 錯誤 | 原因 | 解決方案 |
-|------|------|---------|
-| JSON 解析失敗 | Yahoo Finance 限制 (403/429) | 等待數分鐘後重試 |
-| hist 為 None | yfinance 連線失敗 | 檢查網路連接 |
-| 記錄數 < 2 | 代碼無效或已下市 | 確認代碼（如 0050、2330） |
+| 錯誤          | 原因                         | 解決方案                  |
+| ------------- | ---------------------------- | ------------------------- |
+| JSON 解析失敗 | Yahoo Finance 限制 (403/429) | 等待數分鐘後重試          |
+| hist 為 None  | yfinance 連線失敗            | 檢查網路連接              |
+| 記錄數 < 2    | 代碼無效或已下市             | 確認代碼（如 0050、2330） |
 
 ### GitHub Actions 診斷
 
 #### 步驟 1: 進入 Actions 頁面
+
 ```
 GitHub → Actions → Daily Briefing → 最新工作流
 ```
 
 #### 步驟 2: 查看執行日誌
+
 - 展開 **"Run Daily Briefing"** 步驟查看完整輸出
 - 查看 **"查看 DEBUG 日誌"** 步驟（失敗時自動執行）
 - 查看 **"查看台股診斷日誌"** 步驟（失敗時自動執行）
 
 #### 步驟 3: 搜索關鍵字
+
 使用瀏覽器搜索功能（Ctrl+F）搜索：
+
 - `開始獲取台股數據: 0050`
 - `✅ 成功 (yfinance)`
 - `❌` 或 `⚠️` 標記
@@ -182,6 +205,7 @@ A: 自動輪換機制會保留最新的 3 個備份，舊日誌自動刪除。
 
 **Q: 如何實時監控本地日誌？**  
 A: 使用以下命令持續監控：
+
 ```bash
 Get-Content -Path logs/debug.log -Wait  # PowerShell
 tail -f logs/debug.log                    # bash/Linux

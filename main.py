@@ -274,7 +274,7 @@ def get_reminders():
 def get_tw_stock_data(ticker):
     """獲取台股數據 - 優先使用 TWSE API，再用 yfinance
     
-    關鍵：TWSE API 更可靠，不受 Yahoo Finance 限制
+    注意：在 GitHub Actions 等受限網絡環境中可能無法獲取
     """
     logger.debug(f"{'='*70}")
     logger.debug(f"開始獲取台股數據: {ticker}")
@@ -283,26 +283,28 @@ def get_tw_stock_data(ticker):
     is_github_actions = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
     is_ci = os.environ.get("CI", "").lower() == "true"
     logger.debug(f"執行環境: GitHub Actions={is_github_actions}, CI={is_ci}")
+    
+    if is_github_actions or is_ci:
+        logger.warning(f"⚠️  在 GitHub Actions 環境中，台股數據可能無法獲取（網絡限制）")
     logger.debug(f"{'='*70}")
     
-    # 🔄 方案 1：TWSE 官方 API （最可靠，不受限制）
+    # 🔄 方案 1：TWSE 官方 API （最可靠，但可能被防火牆限制）
     logger.debug(f"[TWSE API] 嘗試台灣證交所官方 API...")
     try:
-        # TWSE API 格式：https://www.tse.com.tw/exchangeReport/STOCK_DAY
         url = "https://www.tse.com.tw/exchangeReport/STOCK_DAY"
         params = {
             "response": "json",
-            "date": "",  # 空白 = 最新日期
+            "date": "",
             "stockNo": ticker
         }
         
-        logger.debug(f"  發送 API 請求: {url}?stockNo={ticker}")
+        logger.debug(f"  發送 API 請求: {url}?stockNo={ticker} (超時: 5 秒)")
         response = requests.get(
             url, 
             params=params, 
-            timeout=10,
+            timeout=5,  # 降低超時以加快失敗
             headers=headers,
-            verify=False  # TWSE SSL 可能有問題
+            verify=False
         )
         
         logger.debug(f"  HTTP 狀態: {response.status_code}")
@@ -312,7 +314,6 @@ def get_tw_stock_data(ticker):
             logger.debug(f"  API 回應: {len(data.get('data', []))} 筆記錄")
             
             if "data" in data and data["data"] and len(data["data"]) > 0:
-                # 欄位順序: 日期, 成交股數, 成交金額, 開盤價, 最高, 最低, 收盤, 漲跌, 成交筆
                 latest = data["data"][-1]
                 close_price = float(latest[6]) if len(latest) > 6 else 0
                 
@@ -335,12 +336,12 @@ def get_tw_stock_data(ticker):
                     logger.info(f"✅ {ticker} 成功 (TWSE API): NT${result['price']} ({result['change_pct']:+.2f}%)")
                     logger.debug(f"{'='*70}")
                     return result
-                else:
-                    logger.debug(f"  ✗ 異常價格: close={close_price}, prev={prev_close}")
-            else:
-                logger.debug(f"  ✗ 無數據 (data 為空或不存在)")
+    except requests.exceptions.ConnectTimeout:
+        logger.debug(f"  TWSE API 連線超時（預期在受限環境中發生）")
+    except requests.exceptions.ConnectionError as e:
+        logger.debug(f"  TWSE API 無法連接: ConnectionError")
     except Exception as e:
-        logger.debug(f"  TWSE API 失敗: {type(e).__name__}: {str(e)[:100]}")
+        logger.debug(f"  TWSE API 失敗: {type(e).__name__}: {str(e)[:80]}")
     
     # 🔄 方案 2：yfinance (備選)
     logger.debug(f"[yfinance] 嘗試 yfinance...")
@@ -350,17 +351,17 @@ def get_tw_stock_data(ticker):
         logger.debug(f"  嘗試: {attempt_ticker}")
         
         try:
+            # 在 CI 環境中使用超時和重試
             if is_ci or is_github_actions:
-                # CI 環境重試
-                for retry in range(3):
+                for retry in range(2):  # 減少重試次數
                     try:
-                        logger.debug(f"    重試 {retry + 1}/3")
+                        logger.debug(f"    嘗試 {retry + 1}/2")
                         stock = yf.Ticker(attempt_ticker)
-                        hist = stock.history(period="10d", timeout=15)
+                        hist = stock.history(period="5d", timeout=10)  # 縮短期間
                         break
                     except Exception:
-                        if retry < 2:
-                            time.sleep(2)
+                        if retry < 1:
+                            time.sleep(1)
                         else:
                             raise
             else:
@@ -368,7 +369,7 @@ def get_tw_stock_data(ticker):
                 hist = stock.history(period="10d")
             
             if hist is None or hist.empty or len(hist) < 2:
-                logger.debug(f"    ✗ 無有效數據 (size: {len(hist) if hist is not None else 0})")
+                logger.debug(f"    ✗ 無有效數據")
                 continue
             
             close_price = float(hist['Close'].iloc[-1])
@@ -386,10 +387,15 @@ def get_tw_stock_data(ticker):
                 logger.debug(f"{'='*70}")
                 return result
         except Exception as e:
-            logger.debug(f"    yfinance [{type(e).__name__}] {str(e)[:80]}")
+            logger.debug(f"    yfinance [{type(e).__name__}]")
     
     # ❌ 所有方案均失敗
-    logger.error(f"❌ {ticker} 無法獲取 (TWSE API + yfinance 均失敗)")
+    if is_github_actions or is_ci:
+        logger.error(f"⚠️  {ticker} 在此環境中無法獲取 (GitHub Actions 網絡限制)")
+        logger.info(f"💡 提示: 台股在 GitHub Actions 中暫不可用，請在本地運行獲取完整數據")
+    else:
+        logger.error(f"❌ {ticker} 無法獲取 (TWSE API + yfinance 均失敗)")
+    
     logger.debug(f"{'='*70}")
     return {"error": "無可用數據"}
 
